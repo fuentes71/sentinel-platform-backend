@@ -1,0 +1,16 @@
+config:
+  target: 'http://localhost:3000'
+  phases:
+    - duration: 30
+      arrivalRate: 3
+  socketio:
+    transports: ['websocket']
+    extraHeaders:
+      Authorization: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI4MDY2YmQ1OC1kMjBjLTQ0ZmEtYmE5MC1iMGM0YjhiYzhmNjkiLCJlbWFpbCI6ImFkbWluQHNlbnRpbmVsLmNvbSIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTc2ODQwMzE1NiwiZXhwIjoxNzY4NDA2NzU2fQ.ca9L1UQ-F5txpFPSXNZofgTIneEGzZaong0NnCFByqk'
+
+scenarios:
+  - engine: socketio
+    flow:
+      - connect:
+          namespace: '/events'
+      - think: 15

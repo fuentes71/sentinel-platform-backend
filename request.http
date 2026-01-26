@@ -1,0 +1,40 @@
+@token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkZGYxNThhZC1iZjliLTRkOWUtYmZlZi1mOTlhOGQyOTMzNGYiLCJlbWFpbCI6ImFkbWluQHNlbnRpbmVsLmNvbSIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTc2ODMzMzM3MSwiZXhwIjoxNzY4MzM2OTcxfQ.1uAi30S67C_cUo6GpduPCWqijGNAV7Hth-P9613yZJ0
+
+### LOGIN
+POST http://localhost:3000/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@sentinel.com",
+  "password": "admin123"
+}
+
+### LOGOUT
+POST http://localhost:3000/auth/logout
+Authorization: Bearer {{token}}
+
+### CREATE ASSET
+POST http://localhost:3000/assets
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Máquina Beta"
+}
+
+### ASSETS - LIST
+GET http://localhost:3000/assets
+Authorization: Bearer {{token}}
+
+### ASSETS - DELETE
+@assetId=put_asset_id_here
+DELETE http://localhost:3000/assets/
+Authorization: Bearer {{token}}
+ 
+### EVENTS - LIST BY ASSET
+GET http://localhost:3000/events/assets/
+Authorization: Bearer {{token}}
+
+### EVENTS - LIST ALL WEBSOCKET
+GET http://localhost:3000/events
+Authorization: Bearer {{token}}
