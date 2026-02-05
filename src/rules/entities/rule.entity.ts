@@ -1,7 +1,9 @@
-export interface Rule {
+export class Rule {
   id: string;
-  assetId: string;
+  name?: string;
+  assetId?: string;
   condition: '>' | '<' | '=';
   threshold: number;
+  level?: 'medium' | 'strong';
   enabled: boolean;
 }

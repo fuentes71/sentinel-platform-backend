@@ -5,6 +5,8 @@ import { RulesService } from '../rules/rules.service';
 import { AssetEventPayload } from './dto/asset-event.payload';
 import { Event } from './entities/event.entity';
 import { EventsGateway } from './events.gateway';
+import { Asset } from '../assets/entities/asset.entity';
+import { AssetsService } from '../assets/assets.service';
 
 @Injectable()
 export class EventsService {
@@ -14,13 +16,31 @@ export class EventsService {
     private readonly gateway: EventsGateway,
     private readonly rulesService: RulesService,
     private readonly alertsService: AlertsService,
+    private readonly assetsService: AssetsService,
   ) {}
 
   create(
     assetId: string,
-    type: 'status' | 'metric',
+    type: 'status' | 'metric' | 'system',
     value: string | number,
-  ): Event {
+  ): Event | null {
+    const asset = this.assetsService.findById(assetId);
+    if (!asset) {
+      console.warn(`[EVENT] Asset ${assetId} não encontrado`);
+      return null;
+    }
+
+    const hasCritical = this.alertsService.hasActiveCriticalAlert(assetId);
+
+    if (hasCritical) {
+      if (!(type === 'status' && value === 'online')) {
+        console.log(
+          `[EVENT BLOCKED] Asset ${assetId} bloqueado por alerta CRITICAL`,
+        );
+        return null;
+      }
+    }
+
     const event: Event = {
       id: uuidv4(),
       assetId,
@@ -30,6 +50,8 @@ export class EventsService {
     };
 
     this.events.push(event);
+
+    this.updateAssetFromEvent(event, hasCritical);
 
     const payload: AssetEventPayload = {
       eventId: event.id,
@@ -46,36 +68,48 @@ export class EventsService {
   }
 
   private evaluateRules(payload: AssetEventPayload): void {
+    if (payload.type !== 'metric') return;
     if (typeof payload.value !== 'number') return;
 
-    const rules = this.rulesService.findByAsset(payload.assetId);
+    const rules = this.rulesService.findApplicableRules(payload.assetId);
 
     for (const rule of rules) {
       if (!this.rulesService.evaluate(rule, payload.value)) continue;
 
+      const level = rule.level === 'strong' ? 'critical' : 'warning';
+
       const alert = this.alertsService.create(
         payload.assetId,
-        'warning',
-        `Regra violada: valor ${payload.value} ${rule.condition} ${rule.threshold}`,
+        level,
+        `Regra violada (${rule.level}): valor ${payload.value} ${rule.condition} ${rule.threshold}`,
       );
 
-      this.gateway.emitAlertResolvedToAsset(alert.assetId, {
+      this.gateway.emitAlertCreatedToAsset(payload.assetId, {
         alertId: alert.alertId,
-        assetId: alert.assetId,
-        resolvedBy: '',
-        resolvedAt: alert.createdAt.toISOString(),
+        assetId: payload.assetId,
+        level: alert.level,
+        message: alert.message,
+        createdAt: alert.createdAt.toISOString(),
       });
+
+      if (rule.level === 'strong') {
+        this.assetsService.updateStatus(payload.assetId, 'offline', new Date());
+
+        console.log(
+          `[AUTO-ACTION] Asset ${payload.assetId} desligado por regra STRONG`,
+        );
+      }
     }
   }
 
   resolveAlert(alertId: string, resolvedBy: string): void {
-    const { assetId } = this.alertsService.resolve(alertId);
+    const { assetId, resolvedAt } = this.alertsService.resolve(alertId);
 
     this.gateway.emitAlertResolvedToAsset(assetId, {
       alertId,
       assetId,
       resolvedBy,
-      resolvedAt: new Date().toISOString(),
+      resolvedAt: resolvedAt.toISOString(),
     });
   }
 
@@ -92,5 +126,17 @@ export class EventsService {
 
   findAll(): Event[] {
     return this.events;
+  }
+
+  private updateAssetFromEvent(event: Event, hasCritical: boolean): void {
+    if (hasCritical) return;
+
+    if (event.type === 'status') {
+      this.assetsService.updateStatus(
+        event.assetId,
+        event.value as Asset['status'],
+        event.timestamp,
+      );
+    }
   }
 }

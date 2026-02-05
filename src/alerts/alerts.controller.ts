@@ -9,37 +9,30 @@ import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 export class AlertsController {
   constructor(private readonly alertsService: AlertsService) {}
 
-  /**
-   * Lista todos os alertas
-   */
   @Get()
   findAll() {
     return this.alertsService.findAll();
   }
 
-  /**
-   * Lista apenas alertas ativos
-   */
   @Get('active')
   findActive() {
     return this.alertsService.findAll().filter((a) => !a.resolved);
   }
 
-  /**
-   * Lista apenas alertas resolvidos
-   */
   @Get('resolved')
   findResolved() {
     return this.alertsService.findAll().filter((a) => a.resolved);
   }
 
-  /**
-   * Resolver alerta (ADMIN)
-   */
-  @Patch(':id/resolve')
+  @Patch('resolve/:id')
   @AdminOnly()
   @UseGuards(AdminGuard)
   resolve(@Param('id') id: string) {
     return this.alertsService.resolve(id);
+  }
+
+  @Get('critical/check/:assetId')
+  hasActiveCriticalAlert(@Param('assetId') assetId: string) {
+    return this.alertsService.hasActiveCriticalAlert(assetId);
   }
 }

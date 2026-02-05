@@ -1,11 +1,9 @@
-export class AssetEventPayload {
+import { EventType } from '../entities/event.entity';
+
+export interface AssetEventPayload {
   eventId: string;
-
   assetId: string;
-
-  type: 'status' | 'metric' | 'alert';
-
-  value?: number | string;
-
+  type: EventType;
+  value: string | number;
   timestamp: Date;
 }

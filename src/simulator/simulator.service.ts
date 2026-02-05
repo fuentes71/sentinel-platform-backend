@@ -6,6 +6,13 @@ import { EventsService } from '../events/events.service';
 
 @Injectable()
 export class SimulatorService {
+  /**
+   * Estado interno do simulador
+   * key = assetId
+   * value = métrica atual
+   */
+  private metrics = new Map<string, number>();
+
   constructor(
     private readonly assetsService: AssetsService,
     private readonly eventsService: EventsService,
@@ -16,20 +23,21 @@ export class SimulatorService {
     const assets: Asset[] = this.assetsService.findAll();
 
     assets.forEach((asset) => {
-      const random = Math.random();
+      const current = this.metrics.get(asset.id) ?? this.randomBetween(40, 60);
 
-      let status: 'online' | 'offline' | 'warning' = 'online';
+      const variation = this.randomBetween(-8, 8);
+      let metric = current + variation;
 
-      if (random > 0.8) status = 'warning';
-      if (random > 0.95) status = 'offline';
+      metric = Math.max(0, Math.min(100, metric));
+      this.metrics.set(asset.id, metric);
 
-      const updated = this.assetsService.updateStatus(asset.id, status);
-      if (!updated) return;
+      this.eventsService.create(asset.id, 'metric', Number(metric.toFixed(1)));
 
-      // 👇 ÚNICA chamada necessária
-      this.eventsService.create(asset.id, 'status', status);
-
-      console.log(`[SIMULATOR] ${asset.name} → ${status}`);
+      console.log(`[SIMULATOR] ${asset.name} | metric=${metric.toFixed(1)}`);
     });
+  }
+
+  private randomBetween(min: number, max: number): number {
+    return Math.random() * (max - min) + min;
   }
 }

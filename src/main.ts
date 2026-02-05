@@ -5,6 +5,12 @@ import { ValidationPipe } from '@nestjs/common';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  app.enableCors({
+    origin: ['http://localhost:4200'],
+    credentials: true,
+  });
+
   app.useGlobalGuards(new JwtAuthGuard(app.get(Reflector)));
   app.useGlobalPipes(
     new ValidationPipe({

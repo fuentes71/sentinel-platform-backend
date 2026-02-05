@@ -1,4 +1,4 @@
-@token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkZGYxNThhZC1iZjliLTRkOWUtYmZlZi1mOTlhOGQyOTMzNGYiLCJlbWFpbCI6ImFkbWluQHNlbnRpbmVsLmNvbSIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTc2ODMzMzM3MSwiZXhwIjoxNzY4MzM2OTcxfQ.1uAi30S67C_cUo6GpduPCWqijGNAV7Hth-P9613yZJ0
+@token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzZjExZWM1Zi0yMjJiLTQ1ODMtYjU2Yi1iNWRmY2Q0Njg2YjIiLCJlbWFpbCI6ImFkbWluQHNlbnRpbmVsLmNvbSIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTc2OTY5MzU5NiwiZXhwIjoxNzY5Nzc5OTk2fQ.CT22x-_Vcc5GLYjZjb-CT8r7xhO4y06kCRR86RvyO54
 
 ### LOGIN
 POST http://localhost:3000/auth/login
@@ -8,10 +8,6 @@ Content-Type: application/json
   "email": "admin@sentinel.com",
   "password": "admin123"
 }
-
-### LOGOUT
-POST http://localhost:3000/auth/logout
-Authorization: Bearer {{token}}
 
 ### CREATE ASSET
 POST http://localhost:3000/assets
@@ -32,9 +28,62 @@ DELETE http://localhost:3000/assets/
 Authorization: Bearer {{token}}
  
 ### EVENTS - LIST BY ASSET
-GET http://localhost:3000/events/assets/
+GET http://localhost:3000/assets
 Authorization: Bearer {{token}}
 
 ### EVENTS - LIST ALL WEBSOCKET
 GET http://localhost:3000/events
+Authorization: Bearer {{token}}
+
+### ALERTS - LIST ACTIVE
+GET http://localhost:3000/alerts/active
+Authorization: Bearer {{token}}
+
+### ALERTS - LIST RESOLVED
+GET http://localhost:3000/alerts/resolved
+Authorization: Bearer {{token}}
+
+### ALERTS - RESOLVE ALERT
+@alertId=9240562a-3ebd-424c-961e-04a2dc4eaffe
+PATCH http://localhost:3000/alerts/resolve/{{alertId}}
+Authorization: Bearer {{token}}
+
+### RULES - CREATE RULE
+POST http://localhost:3000/rules
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Regra de Teste",
+  "condition": ">",
+  "threshold": 60,
+  "level": "strong"
+}
+
+### RULES - LIST ALL
+GET http://localhost:3000/rules
+Authorization: Bearer {{token}}
+
+### RULES - DELETE RULE
+@ruleId=b083696c-986c-46d7-9f94-92011302ccd7
+PATCH  http://localhost:3000/rules/{{ruleId}}/disable
+Authorization: Bearer {{token}}
+
+### USERS - CREATE USER
+POST http://localhost:3000/users
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "email": "teste@gmail.com",
+  "password": "teste123",
+  "role": "user"
+}
+
+### USERS - LIST ALL
+GET http://localhost:3000/users
+Authorization: Bearer {{token}}
+### USERS - DELETE USER
+@userId=put_user_id_here
+DELETE http://localhost:3000/users/{{userId}}
 Authorization: Bearer {{token}}

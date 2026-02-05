@@ -5,4 +5,5 @@ export interface Alert {
   level: 'info' | 'warning' | 'critical';
   createdAt: Date;
   resolved: boolean;
+  resolvedAt?: Date;
 }

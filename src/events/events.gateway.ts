@@ -63,6 +63,10 @@ export class EventsGateway
     this.server.to(`asset:${assetId}`).emit('asset-event', payload);
   }
 
+  emitAlertCreatedToAsset(assetId: string, payload: AlertCreatedPayload): void {
+    this.server.to(`asset:${assetId}`).emit('alert-created', payload);
+  }
+
   emitAlertResolvedToAsset(
     assetId: string,
     payload: AlertResolvedPayload,

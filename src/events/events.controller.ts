@@ -14,4 +14,9 @@ export class EventsController {
   findByAsset(@Param('assetId') assetId: string) {
     return this.service.findByAsset(assetId);
   }
+
+  @Get('asset/:assetId/latest')
+  findLatestByAsset(@Param('assetId') assetId: string) {
+    return this.service.findLatestByAsset(assetId);
+  }
 }

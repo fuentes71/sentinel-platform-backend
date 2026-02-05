@@ -32,7 +32,7 @@ export class AlertsService {
 
     return {
       alertId,
-      assetId,
+      assetId: assetId ?? null,
       level,
       message,
       createdAt: newAlert.createdAt,
@@ -43,15 +43,21 @@ export class AlertsService {
     return this.alerts;
   }
 
-  resolve(id: string): { alertId: string; assetId: string } {
+  resolve(id: string): {
+    alertId: string;
+    assetId: string;
+    resolvedAt: Date;
+  } {
     const alert = this.alerts.find((a) => a.id === id);
     if (!alert) throw new Error('Alerta não encontrado');
 
     alert.resolved = true;
+    alert.resolvedAt = new Date();
 
     return {
-      assetId: alert.assetId,
       alertId: alert.id,
+      assetId: alert.assetId,
+      resolvedAt: alert.resolvedAt,
     };
   }
 
@@ -61,5 +67,18 @@ export class AlertsService {
 
   findResolved(): Alert[] {
     return this.alerts.filter((a) => a.resolved);
+  }
+
+  hasActiveCriticalAlert(assetId: string): boolean {
+    return this.alerts.some(
+      (alert) =>
+        alert.assetId === assetId &&
+        alert.level === 'critical' &&
+        !alert.resolved,
+    );
+  }
+
+  removeByAsset(assetId: string): void {
+    this.alerts = this.alerts.filter((a) => a.assetId !== assetId);
   }
 }
