@@ -1,51 +1,62 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { v4 as uuidv4 } from 'uuid';
 import { Asset } from './entities/asset.entity';
+import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class AssetsService {
-  private assets: Asset[] = [];
+  constructor(private prisma: PrismaService) {}
 
-  create(name: string): Asset {
+  async create(name: string): Promise<Asset> {
     const safeName = (name ?? '').trim();
     if (!safeName) {
       throw new BadRequestException('Nome do asset é obrigatório');
     }
 
-    const asset: Asset = {
-      id: uuidv4(),
-      name: safeName,
-      status: 'online',
-      lastUpdate: new Date(),
-    };
+    const asset = await this.prisma.asset.create({
+      data: {
+        name: safeName,
+        status: 'online',
+        lastUpdate: new Date(),
+      },
+    });
 
-    this.assets.push(asset);
-    return asset;
+    return asset as Asset;
   }
 
-  findAll(): Asset[] {
-    return this.assets;
+  async findAll(): Promise<Asset[]> {
+    return (await this.prisma.asset.findMany()) as Asset[];
   }
 
-  findById(id: string): Asset | undefined {
-    return this.assets.find((asset) => asset.id === id);
+  async findById(id: string): Promise<Asset | null> {
+    const asset = await this.prisma.asset.findUnique({ where: { id } });
+    return asset ? (asset as Asset) : null;
   }
 
-  updateStatus(
+  async updateStatus(
     assetId: string,
-    status: Asset['status'],
+    status: string,
     timestamp: Date = new Date(),
-  ): Asset | null {
-    const asset = this.findById(assetId);
-    if (!asset) return null;
+  ): Promise<Asset | null> {
+    try {
+      const asset = await this.prisma.asset.update({
+        where: { id: assetId },
+        data: {
+          status,
+          lastUpdate: timestamp instanceof Date ? timestamp : new Date(),
+        },
+      });
 
-    asset.status = status;
-    asset.lastUpdate = timestamp instanceof Date ? timestamp : new Date();
-
-    return asset;
+      return asset as Asset;
+    } catch {
+      return null;
+    }
   }
 
-  remove(id: string): void {
-    this.assets = this.assets.filter((asset) => asset.id !== id);
+  async remove(id: string): Promise<void> {
+    try {
+      await this.prisma.asset.delete({ where: { id } });
+    } catch {
+      // Ignore if not found
+    }
   }
 }

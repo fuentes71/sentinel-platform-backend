@@ -1,29 +1,21 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, ConflictException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
-import { v4 as uuidv4 } from 'uuid';
 import { LoginDto } from '../auth/dto/login.dto';
 import { RegisterDto } from '../auth/dto/register.dto';
 import { UserRole } from '../common/enum/roles.enum';
 import { PublicUser, User } from './entities/user.entity';
+import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class UsersService {
-  private users: User[] = [];
+  constructor(private prisma: PrismaService) {}
 
-  constructor() {
-    // User default admin tester
-    void this.createUser({
-      email: 'admin@sentinel.com',
-      password: 'admin123',
-      role: UserRole.ADMIN,
-    });
-  }
-  findAll(): PublicUser[] {
-    const users = this.users;
+  async findAll(): Promise<PublicUser[]> {
+    const users = await this.prisma.user.findMany();
     return users.map((u) => {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { passwordHash, ...publicUser } = u;
-      return publicUser;
+      // Omit passwordHash and createdAt
+      const { passwordHash, createdAt, ...publicUser } = u;
+      return publicUser as unknown as PublicUser;
     });
   }
 
@@ -31,23 +23,23 @@ export class UsersService {
     const { email, password, role } = newUser;
 
     const foundUser = await this.findByEmail(email);
-    if (foundUser) throw new Error('Usuário com este email já existe');
+    if (foundUser) throw new ConflictException('Usuário com este email já existe');
 
     const passwordHash = await bcrypt.hash(password, 10);
 
-    const user: User = {
-      id: uuidv4(),
-      email,
-      passwordHash,
-      role,
-    };
+    const user = await this.prisma.user.create({
+      data: {
+        email,
+        passwordHash,
+        role: role || UserRole.USER,
+      },
+    });
 
-    this.users.push(user);
-    return user;
+    return user as unknown as User;
   }
 
-  findByEmail(email: string): Promise<User | undefined> {
-    return Promise.resolve(this.users.find((u) => u.email === email));
+  findByEmail(email: string): Promise<User | null> {
+    return this.prisma.user.findUnique({ where: { email } }) as unknown as Promise<User | null>;
   }
 
   async validateUser(validateUser: LoginDto): Promise<PublicUser | null> {
@@ -56,6 +48,6 @@ export class UsersService {
     if (!user) return null;
 
     const match = await bcrypt.compare(password, user.passwordHash);
-    return match ? { id: user.id, email: email, role: user.role } : null;
+    return match ? { id: user.id, email: email, role: user.role as UserRole } : null;
   }
 }

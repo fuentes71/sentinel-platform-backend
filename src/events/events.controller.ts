@@ -6,24 +6,24 @@ export class EventsController {
   constructor(private readonly service: EventsService) {}
 
   @Post()
-  create(
+  async create(
     @Body() body: { assetId: string; type: 'status' | 'metric'; value: any },
   ) {
-    return this.service.create(body.assetId, body.type, body.value);
+    return await this.service.create(body.assetId, body.type, body.value);
   }
 
   @Get()
-  findAll() {
-    return this.service.findAll();
+  async findAll() {
+    return await this.service.findAll();
   }
 
   @Get('asset/:assetId')
-  findByAsset(@Param('assetId') assetId: string) {
-    return this.service.findByAsset(assetId);
+  async findByAsset(@Param('assetId') assetId: string) {
+    return await this.service.findByAsset(assetId);
   }
 
   @Get('asset/:assetId/latest')
-  findLatestByAsset(@Param('assetId') assetId: string) {
-    return this.service.findLatestByAsset(assetId);
+  async findLatestByAsset(@Param('assetId') assetId: string) {
+    return await this.service.findLatestByAsset(assetId);
   }
 }

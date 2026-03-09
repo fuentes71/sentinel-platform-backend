@@ -25,30 +25,30 @@ export class AssetsController {
   ) {}
 
   @Post()
-  create(@Body('name') name: string) {
-    return this.assetsService.create(name);
+  async create(@Body('name') name: string) {
+    return await this.assetsService.create(name);
   }
 
   @Get()
-  findAll() {
-    return this.assetsService.findAll();
+  async findAll() {
+    return await this.assetsService.findAll();
   }
 
   @Get(':id')
-  findById(@Param('id') id: string) {
-    const asset = this.assetsService.findById(id);
+  async findById(@Param('id') id: string) {
+    const asset = await this.assetsService.findById(id);
     if (!asset) throw new NotFoundException('Asset não encontrado');
     return asset;
   }
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  remove(@Param('id') id: string) {
-    const asset = this.assetsService.findById(id);
+  async remove(@Param('id') id: string) {
+    const asset = await this.assetsService.findById(id);
     if (!asset) throw new NotFoundException('Asset não encontrado');
 
-    this.eventsService.create(id, 'status', 'offline');
-    this.alertsService.removeByAsset(id);
-    this.assetsService.remove(id);
+    await this.eventsService.create(id, 'status', 'offline');
+    await this.alertsService.removeByAsset(id);
+    await this.assetsService.remove(id);
   }
 }

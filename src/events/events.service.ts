@@ -1,36 +1,35 @@
 import { Injectable } from '@nestjs/common';
-import { v4 as uuidv4 } from 'uuid';
 import { AlertsService } from '../alerts/alerts.service';
 import { RulesService } from '../rules/rules.service';
 import { AssetEventPayload } from './dto/asset-event.payload';
 import { Event } from './entities/event.entity';
 import { EventsGateway } from './events.gateway';
-import { Asset } from '../assets/entities/asset.entity';
 import { AssetsService } from '../assets/assets.service';
+import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class EventsService {
-  private events: Event[] = [];
 
   constructor(
     private readonly gateway: EventsGateway,
     private readonly rulesService: RulesService,
     private readonly alertsService: AlertsService,
     private readonly assetsService: AssetsService,
+    private readonly prisma: PrismaService,
   ) {}
 
-  create(
+  async create(
     assetId: string,
     type: 'status' | 'metric' | 'system',
     value: string | number,
-  ): Event | null {
-    const asset = this.assetsService.findById(assetId);
+  ): Promise<Event | null> {
+    const asset = await this.assetsService.findById(assetId);
     if (!asset) {
       console.warn(`[EVENT] Asset ${assetId} não encontrado`);
       return null;
     }
 
-    const hasCritical = this.alertsService.hasActiveCriticalAlert(assetId);
+    const hasCritical = await this.alertsService.hasActiveCriticalAlert(assetId);
 
     if (hasCritical) {
       if (!(type === 'status' && value === 'online')) {
@@ -41,46 +40,53 @@ export class EventsService {
       }
     }
 
+    const newEvent = await this.prisma.event.create({
+      data: {
+        assetId,
+        type,
+        value: String(value),
+        timestamp: new Date(),
+      },
+    });
+
     const event: Event = {
-      id: uuidv4(),
-      assetId,
-      type,
-      value,
-      timestamp: new Date(),
+      id: newEvent.id,
+      assetId: newEvent.assetId,
+      type: newEvent.type as 'status' | 'metric' | 'system',
+      value: newEvent.value,
+      timestamp: newEvent.timestamp,
     };
 
-    this.events.push(event);
-
-    this.updateAssetFromEvent(event, hasCritical);
+    await this.updateAssetFromEvent(event, hasCritical);
 
     const payload: AssetEventPayload = {
       eventId: event.id,
       assetId,
       type,
-      value,
+      value: isNaN(Number(event.value)) ? event.value : Number(event.value),
       timestamp: event.timestamp,
     };
 
     this.gateway.emitEventToAsset(assetId, payload);
-    this.evaluateRules(payload);
+    await this.evaluateRules(payload);
 
     return event;
   }
 
-  private evaluateRules(payload: AssetEventPayload): void {
+  private async evaluateRules(payload: AssetEventPayload): Promise<void> {
     if (payload.type !== 'metric') return;
     if (typeof payload.value !== 'number') return;
 
-    const rules = this.rulesService.findApplicableRules(payload.assetId);
+    const rules = await this.rulesService.findApplicableRules(payload.assetId);
 
     for (const rule of rules) {
       if (!this.rulesService.evaluate(rule, payload.value)) continue;
 
       const level = rule.level === 'strong' ? 'critical' : 'warning';
 
-      const alert = this.alertsService.create(
+      const alert = await this.alertsService.create(
         payload.assetId,
-        level,
+        level as 'critical' | 'warning' | 'info',
         `Regra violada (${rule.level}): valor ${payload.value} ${rule.condition} ${rule.threshold}`,
       );
 
@@ -93,7 +99,7 @@ export class EventsService {
       });
 
       if (rule.level === 'strong') {
-        this.assetsService.updateStatus(payload.assetId, 'offline', new Date());
+        await this.assetsService.updateStatus(payload.assetId, 'offline', new Date());
 
         console.log(
           `[AUTO-ACTION] Asset ${payload.assetId} desligado por regra STRONG`,
@@ -102,8 +108,8 @@ export class EventsService {
     }
   }
 
-  resolveAlert(alertId: string, resolvedBy: string): void {
-    const { assetId, resolvedAt } = this.alertsService.resolve(alertId);
+  async resolveAlert(alertId: string, resolvedBy: string): Promise<void> {
+    const { assetId, resolvedAt } = await this.alertsService.resolve(alertId);
 
     this.gateway.emitAlertResolvedToAsset(assetId, {
       alertId,
@@ -113,28 +119,29 @@ export class EventsService {
     });
   }
 
-  findByAsset(assetId: string): Event[] {
-    return this.events.filter((e) => e.assetId === assetId);
+  async findByAsset(assetId: string): Promise<Event[]> {
+    return (await this.prisma.event.findMany({ where: { assetId }, orderBy: { timestamp: 'desc' } })) as Event[];
   }
 
-  findLatestByAsset(assetId: string): Event | undefined {
-    for (let i = this.events.length - 1; i >= 0; i--) {
-      if (this.events[i].assetId === assetId) return this.events[i];
-    }
-    return undefined;
+  async findLatestByAsset(assetId: string): Promise<Event | null> {
+    const event = await this.prisma.event.findFirst({
+      where: { assetId },
+      orderBy: { timestamp: 'desc' },
+    });
+    return event as Event | null;
   }
 
-  findAll(): Event[] {
-    return this.events;
+  async findAll(): Promise<Event[]> {
+    return (await this.prisma.event.findMany({ orderBy: { timestamp: 'desc' } })) as Event[];
   }
 
-  private updateAssetFromEvent(event: Event, hasCritical: boolean): void {
+  private async updateAssetFromEvent(event: Event, hasCritical: boolean): Promise<void> {
     if (hasCritical) return;
 
     if (event.type === 'status') {
-      this.assetsService.updateStatus(
+      await this.assetsService.updateStatus(
         event.assetId,
-        event.value as Asset['status'],
+        event.value as string,
         event.timestamp,
       );
     }

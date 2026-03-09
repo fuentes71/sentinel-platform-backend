@@ -1,34 +1,42 @@
 import { Injectable } from '@nestjs/common';
-import { v4 as uuid } from 'uuid';
 import { Rule } from './entities/rule.entity';
+import { PrismaService } from '../prisma/prisma.service';
+
 @Injectable()
 export class RulesService {
-  private rules: Rule[] = [];
+  constructor(private prisma: PrismaService) {}
 
-  create(rule: Omit<Rule, 'id'>): Rule {
-    const { enabled, level, ...rest } = rule;
+  async create(rule: Omit<Rule, 'id'>): Promise<Rule> {
+    const { enabled, level, assetId, condition, threshold } = rule;
 
-    const newRule: Rule = {
-      id: uuid(),
-      enabled: enabled ?? true,
-      level: level ?? 'medium',
-      ...rest,
-    };
-
-    this.rules.push(newRule);
-    return newRule;
-  }
-
-  findAll(): Rule[] {
-    return this.rules;
-  }
-
-  findApplicableRules(assetId: string): Rule[] {
-    return this.rules.filter((rule) => {
-      if (!rule.enabled) return false;
-      if (!rule.assetId) return true;
-      return rule.assetId === assetId;
+    const newRule = await this.prisma.rule.create({
+      data: {
+        assetId,
+        condition,
+        threshold,
+        enabled: enabled ?? true,
+        level: level ?? 'medium',
+      },
     });
+    
+    return newRule as Rule;
+  }
+
+  async findAll(): Promise<Rule[]> {
+    return (await this.prisma.rule.findMany()) as Rule[];
+  }
+
+  async findApplicableRules(assetId: string): Promise<Rule[]> {
+    const rules = await this.prisma.rule.findMany({
+      where: {
+        enabled: true,
+        OR: [
+          { assetId: assetId },
+          { assetId: null }
+        ]
+      }
+    });
+    return rules as Rule[];
   }
 
   evaluate(rule: Rule, value: number): boolean {
@@ -44,7 +52,25 @@ export class RulesService {
     }
   }
 
-  findSpecificRules(assetId: string): Rule[] {
-    return this.rules.filter((r) => r.assetId === assetId && r.enabled);
+  async findSpecificRules(assetId: string): Promise<Rule[]> {
+    const rules = await this.prisma.rule.findMany({
+      where: {
+        assetId: assetId,
+        enabled: true
+      }
+    });
+    return rules as Rule[];
+  }
+
+  async toggle(id: string, enabled: boolean): Promise<Rule | null> {
+    try {
+      const rule = await this.prisma.rule.update({
+        where: { id },
+        data: { enabled }
+      });
+      return rule as Rule;
+    } catch {
+      return null;
+    }
   }
 }

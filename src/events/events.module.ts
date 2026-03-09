@@ -7,6 +7,7 @@ import { EventsController } from './events.controller';
 import { EventsGateway } from './events.gateway';
 import { EventsService } from './events.service';
 import { WsAuthService } from '../common/middleware/ws-auth.service';
+import { PrismaModule } from '../prisma/prisma.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { WsAuthService } from '../common/middleware/ws-auth.service';
     AlertsModule,
     AuthModule,
     forwardRef(() => AssetsModule),
+    PrismaModule,
   ],
   controllers: [EventsController],
   providers: [EventsGateway, EventsService, WsAuthService],

@@ -10,29 +10,29 @@ export class AlertsController {
   constructor(private readonly alertsService: AlertsService) {}
 
   @Get()
-  findAll() {
-    return this.alertsService.findAll();
+  async findAll() {
+    return await this.alertsService.findAll();
   }
 
   @Get('active')
-  findActive() {
-    return this.alertsService.findAll().filter((a) => !a.resolved);
+  async findActive() {
+    return await this.alertsService.findActive();
   }
 
   @Get('resolved')
-  findResolved() {
-    return this.alertsService.findAll().filter((a) => a.resolved);
+  async findResolved() {
+    return await this.alertsService.findResolved();
   }
 
   @Patch('resolve/:id')
   @AdminOnly()
   @UseGuards(AdminGuard)
-  resolve(@Param('id') id: string) {
-    return this.alertsService.resolve(id);
+  async resolve(@Param('id') id: string) {
+    return await this.alertsService.resolve(id);
   }
 
   @Get('critical/check/:assetId')
-  hasActiveCriticalAlert(@Param('assetId') assetId: string) {
-    return this.alertsService.hasActiveCriticalAlert(assetId);
+  async hasActiveCriticalAlert(@Param('assetId') assetId: string) {
+    return await this.alertsService.hasActiveCriticalAlert(assetId);
   }
 }

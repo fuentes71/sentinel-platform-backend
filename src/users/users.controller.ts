@@ -14,8 +14,8 @@ export class UsersController {
   @Get()
   @AdminOnly()
   @UseGuards(AdminGuard)
-  findAll(): PublicUser[] {
-    return this.usersService.findAll();
+  async findAll(): Promise<PublicUser[]> {
+    return await this.usersService.findAll();
   }
 
   @Get(':email')

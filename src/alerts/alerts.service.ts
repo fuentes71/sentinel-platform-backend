@@ -1,84 +1,90 @@
-import { Injectable } from '@nestjs/common';
-import { v4 as uuid } from 'uuid';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { Alert } from './entities/alert.entity';
+import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class AlertsService {
-  private alerts: Alert[] = [];
+  constructor(private prisma: PrismaService) {}
 
-  create(
+  async create(
     assetId: string,
-    level: 'info' | 'warning' | 'critical',
+    level: 'critical' | 'warning' | 'info',
     message: string,
-  ): {
+  ): Promise<{
     alertId: string;
     assetId: string;
-    level: 'info' | 'warning' | 'critical';
+    level: 'critical' | 'warning' | 'info';
     message: string;
     createdAt: Date;
-  } {
-    const alertId = uuid();
+  }> {
 
-    const newAlert: Alert = {
-      id: alertId,
-      assetId,
-      level,
-      message,
-      resolved: false,
-      createdAt: new Date(),
-    };
-
-    this.alerts.push(newAlert);
+    const newAlert = await this.prisma.alert.create({
+      data: {
+        assetId,
+        level,
+        message,
+        resolved: false,
+      },
+    });
 
     return {
-      alertId,
-      assetId: assetId ?? null,
-      level,
-      message,
+      alertId: newAlert.id,
+      assetId: newAlert.assetId,
+      level: newAlert.level as 'critical' | 'warning' | 'info',
+      message: newAlert.message,
       createdAt: newAlert.createdAt,
     };
   }
 
-  findAll(): Alert[] {
-    return this.alerts;
+  async findAll(): Promise<Alert[]> {
+    return (await this.prisma.alert.findMany()) as Alert[];
   }
 
-  resolve(id: string): {
+  async resolve(id: string): Promise<{
     alertId: string;
     assetId: string;
     resolvedAt: Date;
-  } {
-    const alert = this.alerts.find((a) => a.id === id);
-    if (!alert) throw new Error('Alerta não encontrado');
+  }> {
+    const alert = await this.prisma.alert.findUnique({ where: { id } });
+    if (!alert) throw new NotFoundException('Alerta não encontrado');
 
-    alert.resolved = true;
-    alert.resolvedAt = new Date();
+    const updatedAlert = await this.prisma.alert.update({
+      where: { id },
+      data: {
+        resolved: true,
+        resolvedAt: new Date(),
+      },
+    });
 
     return {
-      alertId: alert.id,
-      assetId: alert.assetId,
-      resolvedAt: alert.resolvedAt,
+      alertId: updatedAlert.id,
+      assetId: updatedAlert.assetId,
+      resolvedAt: updatedAlert.resolvedAt as Date,
     };
   }
 
-  findActive(): Alert[] {
-    return this.alerts.filter((a) => !a.resolved);
+  async findActive(): Promise<Alert[]> {
+    return (await this.prisma.alert.findMany({ where: { resolved: false } })) as Alert[];
   }
 
-  findResolved(): Alert[] {
-    return this.alerts.filter((a) => a.resolved);
+  async findResolved(): Promise<Alert[]> {
+    return (await this.prisma.alert.findMany({ where: { resolved: true } })) as Alert[];
   }
 
-  hasActiveCriticalAlert(assetId: string): boolean {
-    return this.alerts.some(
-      (alert) =>
-        alert.assetId === assetId &&
-        alert.level === 'critical' &&
-        !alert.resolved,
-    );
+  async hasActiveCriticalAlert(assetId: string): Promise<boolean> {
+    const criticalAlert = await this.prisma.alert.findFirst({
+      where: {
+        assetId,
+        level: 'critical',
+        resolved: false,
+      },
+    });
+    return !!criticalAlert;
   }
 
-  removeByAsset(assetId: string): void {
-    this.alerts = this.alerts.filter((a) => a.assetId !== assetId);
+  async removeByAsset(assetId: string): Promise<void> {
+    await this.prisma.alert.deleteMany({
+      where: { assetId },
+    });
   }
 }
