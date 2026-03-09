@@ -1,10 +1,6 @@
-import {
-  CanActivate,
-  ExecutionContext,
-  Injectable,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { WsException } from '@nestjs/websockets';
 import { Socket } from 'socket.io';
 import { WsUser } from '../types/ws-user.type';
 
@@ -22,17 +18,20 @@ export class WsJwtAuthGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean {
     const client = context.switchToWs().getClient<AuthenticatedSocket>();
 
-    const authHeader = client.handshake.headers.authorization;
+    console.log('[WS] autenticando cliente', client.id);
+    console.log('[WS] handshake do cliente', client.handshake);
 
-    if (!authHeader) {
-      throw new UnauthorizedException('Token não informado');
+    const auth = client.handshake.auth as unknown;
+    const rawToken =
+      typeof auth === 'object' && auth !== null && 'token' in auth
+        ? (auth as { token?: unknown }).token
+        : undefined;
+
+    if (typeof rawToken !== 'string' || rawToken.length === 0) {
+      throw new WsException('Token não informado');
     }
 
-    const [type, token] = authHeader.split(' ');
-
-    if (type !== 'Bearer' || !token) {
-      throw new UnauthorizedException('Formato de token inválido');
-    }
+    const token = rawToken.startsWith('Bearer ') ? rawToken.slice(7) : rawToken;
 
     try {
       const payload = this.jwtService.verify<{
@@ -49,7 +48,7 @@ export class WsJwtAuthGuard implements CanActivate {
 
       return true;
     } catch {
-      throw new UnauthorizedException('Token inválido');
+      throw new WsException('Token inválido');
     }
   }
 }

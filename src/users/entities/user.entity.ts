@@ -6,3 +6,5 @@ export class User {
   passwordHash: string;
   role: UserRole;
 }
+
+export type PublicUser = Omit<User, 'passwordHash'>;

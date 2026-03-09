@@ -6,6 +6,7 @@ import { RulesModule } from '../rules/rules.module';
 import { EventsController } from './events.controller';
 import { EventsGateway } from './events.gateway';
 import { EventsService } from './events.service';
+import { WsAuthService } from '../common/middleware/ws-auth.service';
 
 @Module({
   imports: [
@@ -15,7 +16,7 @@ import { EventsService } from './events.service';
     forwardRef(() => AssetsModule),
   ],
   controllers: [EventsController],
-  providers: [EventsGateway, EventsService],
+  providers: [EventsGateway, EventsService, WsAuthService],
   exports: [EventsService],
 })
 export class EventsModule {}

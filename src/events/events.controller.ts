@@ -1,9 +1,16 @@
-import { Controller, Get, Param } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post } from '@nestjs/common';
 import { EventsService } from './events.service';
 
 @Controller('events')
 export class EventsController {
   constructor(private readonly service: EventsService) {}
+
+  @Post()
+  create(
+    @Body() body: { assetId: string; type: 'status' | 'metric'; value: any },
+  ) {
+    return this.service.create(body.assetId, body.type, body.value);
+  }
 
   @Get()
   findAll() {

@@ -4,7 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { LoginDto } from '../auth/dto/login.dto';
 import { RegisterDto } from '../auth/dto/register.dto';
 import { UserRole } from '../common/enum/roles.enum';
-import { User } from './entities/user.entity';
+import { PublicUser, User } from './entities/user.entity';
 
 @Injectable()
 export class UsersService {
@@ -16,6 +16,14 @@ export class UsersService {
       email: 'admin@sentinel.com',
       password: 'admin123',
       role: UserRole.ADMIN,
+    });
+  }
+  findAll(): PublicUser[] {
+    const users = this.users;
+    return users.map((u) => {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { passwordHash, ...publicUser } = u;
+      return publicUser;
     });
   }
 
@@ -42,12 +50,12 @@ export class UsersService {
     return Promise.resolve(this.users.find((u) => u.email === email));
   }
 
-  async validateUser(validateUser: LoginDto): Promise<User | null> {
+  async validateUser(validateUser: LoginDto): Promise<PublicUser | null> {
     const { email, password } = validateUser;
     const user = await this.findByEmail(email);
     if (!user) return null;
 
     const match = await bcrypt.compare(password, user.passwordHash);
-    return match ? user : null;
+    return match ? { id: user.id, email: email, role: user.role } : null;
   }
 }

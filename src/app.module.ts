@@ -9,12 +9,14 @@ import { AuthModule } from './auth/auth.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { EventsModule } from './events/events.module';
 import { RealtimeModule } from './realtime/realtime.module';
+import { PrismaModule } from './prisma/prisma.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     ScheduleModule.forRoot(),
 
+    PrismaModule,
     AuthModule,
     AssetsModule,
     EventsModule,
