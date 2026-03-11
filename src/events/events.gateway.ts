@@ -32,7 +32,12 @@ interface ServerToClientEvents {
 
 @WebSocketGateway({
   namespace: '/events',
-  cors: { origin: '*' },
+  cors: {
+    origin: process.env.CORS_ORIGIN
+      ? process.env.CORS_ORIGIN.split(',')
+      : ['http://localhost:4200'],
+    credentials: true,
+  },
 })
 @Injectable()
 export class EventsGateway
