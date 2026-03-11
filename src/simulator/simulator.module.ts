@@ -4,7 +4,7 @@ import { SimulatorService } from './simulator.service';
 import { AssetsModule } from '../assets/assets.module';
 import { EventsModule } from '../events/events.module';
 import { ClientsModule, Transport } from '@nestjs/microservices';
-import { SimulationWorkerController } from './simulation-worker.controller';
+import { SimulationController } from './simulator.controller';
 
 @Module({
   imports: [
@@ -25,7 +25,7 @@ import { SimulationWorkerController } from './simulation-worker.controller';
       },
     ]),
   ],
-  controllers: [SimulationWorkerController],
+  controllers: [SimulationController],
   providers: [SimulatorService],
 })
-export class SimulatorModule {}
+export class SimulatorModule { }
