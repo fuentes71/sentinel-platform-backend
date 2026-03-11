@@ -60,23 +60,25 @@ describe('SimulationController', () => {
     });
 
     it('should keep metrics within 0-100 bounds', async () => {
-      const asset: Asset = { id: 'asset-1', name: 'Test Asset', status: 'online', lastUpdate: new Date() };
+      const asset1: Asset = { id: 'asset-1', name: 'Test Asset', status: 'online', lastUpdate: new Date() };
 
       // Force metric to go below 0
       jest.spyOn(controller as any, 'randomBetween')
         .mockReturnValueOnce(5)   // initial metric
         .mockReturnValueOnce(-10); // variation
 
-      await controller.handleSimulateAsset(asset);
+      await controller.handleSimulateAsset(asset1);
       expect(mockEventsService.create).toHaveBeenCalledWith('asset-1', 'metric', 0); // clamped to 0
+
+      const asset2: Asset = { id: 'asset-2', name: 'Test Asset 2', status: 'online', lastUpdate: new Date() };
 
       // Force metric to go above 100
       jest.spyOn(controller as any, 'randomBetween')
         .mockReturnValueOnce(95)   // initial metric
         .mockReturnValueOnce(10);  // variation
 
-      await controller.handleSimulateAsset(asset);
-      expect(mockEventsService.create).toHaveBeenCalledWith('asset-1', 'metric', 100); // clamped to 100
+      await controller.handleSimulateAsset(asset2);
+      expect(mockEventsService.create).toHaveBeenCalledWith('asset-2', 'metric', 100); // clamped to 100
     });
   });
 });

@@ -38,10 +38,10 @@ describe('RulesController', () => {
     it('should create a new rule', async () => {
       const dto = {
         assetId: '1',
-        condition: '>',
+        condition: '>' as const,
         threshold: 10,
         enabled: true,
-        level: 'medium'
+        level: 'medium' as const
       };
       const expectedResult = { id: '1', ...dto };
 

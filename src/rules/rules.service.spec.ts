@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { RulesService } from './rules.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { Rule } from './entities/rule.entity';
 
 describe('RulesService', () => {
   let service: RulesService;
@@ -37,8 +38,8 @@ describe('RulesService', () => {
 
   describe('create', () => {
     it('should create a new rule', async () => {
-      const dto = { assetId: '1', condition: '>', threshold: 10 };
-      const createdRule = { id: 'rule-1', ...dto, enabled: true, level: 'medium' };
+      const dto: Omit<Rule, 'id'> = { assetId: '1', condition: '>', threshold: 10, enabled: true, level: 'medium' };
+      const createdRule: Rule = { id: 'rule-1', ...dto };
 
       mockPrismaService.rule.create.mockResolvedValue(createdRule);
 
@@ -57,8 +58,8 @@ describe('RulesService', () => {
     });
 
     it('should respect provided enabled and level values', async () => {
-      const dto = { assetId: '1', condition: '>', threshold: 10, enabled: false, level: 'critical' };
-      const createdRule = { id: 'rule-1', ...dto };
+      const dto: Omit<Rule, 'id'> = { assetId: '1', condition: '>', threshold: 10, enabled: false, level: 'strong' };
+      const createdRule: Rule = { id: 'rule-1', ...dto };
 
       mockPrismaService.rule.create.mockResolvedValue(createdRule);
 
@@ -71,7 +72,7 @@ describe('RulesService', () => {
           condition: '>',
           threshold: 10,
           enabled: false,
-          level: 'critical',
+          level: 'strong',
         },
       });
     });
@@ -118,25 +119,25 @@ describe('RulesService', () => {
 
   describe('evaluate', () => {
     it('should evaluate > correctly', () => {
-      const rule = { condition: '>', threshold: 50, id: '1', assetId: '1', level: 'medium', enabled: true };
+      const rule: Rule = { condition: '>', threshold: 50, id: '1', assetId: '1', level: 'medium', enabled: true };
       expect(service.evaluate(rule, 60)).toBe(true);
       expect(service.evaluate(rule, 40)).toBe(false);
     });
 
     it('should evaluate < correctly', () => {
-      const rule = { condition: '<', threshold: 50, id: '1', assetId: '1', level: 'medium', enabled: true };
+      const rule: Rule = { condition: '<', threshold: 50, id: '1', assetId: '1', level: 'medium', enabled: true };
       expect(service.evaluate(rule, 40)).toBe(true);
       expect(service.evaluate(rule, 60)).toBe(false);
     });
 
     it('should evaluate = correctly', () => {
-      const rule = { condition: '=', threshold: 50, id: '1', assetId: '1', level: 'medium', enabled: true };
+      const rule: Rule = { condition: '=', threshold: 50, id: '1', assetId: '1', level: 'medium', enabled: true };
       expect(service.evaluate(rule, 50)).toBe(true);
       expect(service.evaluate(rule, 40)).toBe(false);
     });
 
     it('should return false for unknown condition', () => {
-      const rule = { condition: 'unknown', threshold: 50, id: '1', assetId: '1', level: 'medium', enabled: true };
+      const rule = { condition: 'unknown' as any, threshold: 50, id: '1', assetId: '1', level: 'medium', enabled: true } as Rule;
       expect(service.evaluate(rule, 50)).toBe(false);
     });
   });
