@@ -1,15 +1,13 @@
+- [NestJS](https://nestjs.com/)
+- [JWT Authentication](https://jwt.io/introduction/)
+- [WebSocket (Socket.IO)](https://socket.io/)
+- [Class Validator](https://github.com/typestack/class-validator)
+- [Arquitetura Modular](https://docs.nestjs.com/modules)
+
 # Sentinel Platform (Backend)
 
 Plataforma de monitoramento em tempo real para ativos fictícios,
 com geração de eventos, engine de regras e alertas via WebSocket.
-
-## Stack
-
-- NestJS
-- JWT Authentication
-- WebSocket (Socket.IO)
-- Class Validator
-- Arquitetura modular
 
 ## Funcionalidades
 
